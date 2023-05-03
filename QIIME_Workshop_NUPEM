@@ -1,0 +1,369 @@
+{
+  "nbformat": 4,
+  "nbformat_minor": 0,
+  "metadata": {
+    "colab": {
+      "provenance": [],
+      "toc_visible": true,
+      "include_colab_link": true
+    },
+    "kernelspec": {
+      "name": "python3",
+      "display_name": "Python 3"
+    },
+    "language_info": {
+      "name": "python"
+    }
+  },
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "view-in-github",
+        "colab_type": "text"
+      },
+      "source": [
+        "<a href=\"https://colab.research.google.com/github/DeborahLeite/deborahleite_datascience/blob/main/QIIME_Workshop_NUPEM\" target=\"_parent\"><img src=\"https://colab.research.google.com/assets/colab-badge.svg\" alt=\"Open In Colab\"/></a>"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "id": "JZ0xC4uwGqbi"
+      },
+      "outputs": [],
+      "source": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "# Instalando QIIME 2"
+      ],
+      "metadata": {
+        "id": "V3wAoY5qG__P"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "# Importando dados"
+      ],
+      "metadata": {
+        "id": "vD949vviHK3J"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "cd Documents/Example_Dataset"
+      ],
+      "metadata": {
+        "id": "o1ckIzrJU5J1"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "qiime tools import  \\\n",
+        "--type 'SampleData[PairedEndSequencesWithQuality]'  \\\n",
+        "--input-path manifestfile.csv \\\n",
+        "--output-path demux-paired-end.qza \\\n",
+        "--input-format PairedEndFastqManifestPhred33\n"
+      ],
+      "metadata": {
+        "id": "-SQfUJ_aWD8Y"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "qiime demux summarize \\\n",
+        "--i-data demux-paired-end.qza \\\n",
+        "--o-visualization demux-paired-end.qzv"
+      ],
+      "metadata": {
+        "id": "kVf8rGF-W7Fs"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "# Controle de qualidade das sequências, *Pair joining* e *Clustering*"
+      ],
+      "metadata": {
+        "id": "9CAh9VblTFXl"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "**Usando DADA2**"
+      ],
+      "metadata": {
+        "id": "qCtyntHfXgAY"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "mkdir ASVS_DADA2"
+      ],
+      "metadata": {
+        "id": "2-vdbjwuXEy-"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "qiime dada2 denoise-paired \\\n",
+        "--i-demultiplexed-seqs demux-paired-end.qza \\\n",
+        "--o-table ASVS_DADA2/asv_table.qza \\\n",
+        "--o-representative-sequences ASVS_DADA2/rep-seqs.qza  \\\n",
+        "--o-denoising-stats ASVS/denoising-stats.qza \\\n",
+        "--p-trim-left-f 15 \\\n",
+        "--p-trim-left-r 15 \\\n",
+        "--p-trunc-len-f 145 \\\n",
+        "--p-trunc-len-r 145"
+      ],
+      "metadata": {
+        "id": "oGcBZ_1HXI-O"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "cp metadatafile.tsv ASVS_DADA2/metadatafile.tsv\n",
+        "cd ASVS_DADA2"
+      ],
+      "metadata": {
+        "id": "FeFFgD_dXbp-"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Visualização dos dados"
+      ],
+      "metadata": {
+        "id": "lAM10Rx2XxSR"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "qiime feature-table summarize \\\n",
+        "  --i-table asv_table.qza \\\n",
+        "  --o-visualization asv_table.qzv \\\n",
+        "  --m-sample-metadata-file metadatafile.tsv\n",
+        " \n",
+        "qiime feature-table tabulate-seqs \\\n",
+        "  --i-data rep-seqs.qza \\\n",
+        "  --o-visualization rep-seqs.qzv\n",
+        " \n",
+        "qiime metadata tabulate \\\n",
+        "  --m-input-file denoising-stats.qza \\\n",
+        "  --o-visualization denoising-stats.qzv"
+      ],
+      "metadata": {
+        "id": "Ghlmddp9Xtae"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "**Usando Deblur**"
+      ],
+      "metadata": {
+        "id": "kjOWfe_YXkCj"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "mkdir ASVS_DEBLUR"
+      ],
+      "metadata": {
+        "id": "Bq_g5V1sXmQD"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "qiime quality-filter q-score \\\n",
+        "--i-demux demux-paired-end.qza \\\n",
+        "--o-filtered-sequences ASVS_DEBLUR/demux-q30-filtered.qza \\\n",
+        "--o-filter-stats ASVS_DEBLUR/demux-q30-filter-stats.qza \\\n",
+        "--p-min-quality 30\n",
+        " \n",
+        "qiime demux summarize \\\n",
+        "--i-data ASVS_DEBLUR/demux-q30-filtered.qza  \\\n",
+        "--o-visualization ASVS_DEBLUR/demux-q30-filtered.qzv\n",
+        " \n",
+        " \n",
+        "qiime metadata tabulate \\\n",
+        "--m-input-file ASVS_DEBLUR/demux-q30-filter-stats.qza \\\n",
+        "--o-visualization ASVS_DEBLUR/demux-q30-filter-stats.qzv"
+      ],
+      "metadata": {
+        "id": "3J5fkLabaqm9"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "cp metadatafile.tsv ASVS_DEBLUR/metadatafile.tsv\n",
+        "cd ASVS_DEBLUR"
+      ],
+      "metadata": {
+        "id": "_15OhPLja32a"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "qiime deblur denoise-16S \\\n",
+        "--i-demultiplexed-seqs demux-q30-filtered.qza \\\n",
+        "--o-representative-sequences rep-seqs-deblur.qza \\\n",
+        "--o-table table-deblur.qza \\\n",
+        "--p-sample-stats \\\n",
+        "--o-stats deblur-stats.qza \\\n",
+        "--p-trim-length 140\n",
+        " \n",
+        "qiime feature-table tabulate-seqs \\\n",
+        "--i-data rep-seqs-deblur.qza \\\n",
+        "--o-visualization rep-seqs-deblur.qzv\n",
+        " \n",
+        "qiime deblur visualize-stats \\\n",
+        "--i-deblur-stats deblur-stats.qza \\\n",
+        "--o-visualization deblur-stats.qzv\n",
+        " \n",
+        "qiime feature-table summarize \\\n",
+        "--i-table table-deblur.qza \\\n",
+        "--o-visualization table-deblur.qzv \\\n",
+        "--m-sample-metadata-file metadatafile.tsv"
+      ],
+      "metadata": {
+        "id": "g32S1mN8a8-6"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [],
+      "metadata": {
+        "id": "g0Utdqa5a3kP"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "# Construção de árvore filogenética"
+      ],
+      "metadata": {
+        "id": "rmBUbICsTGBG"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "A partir daqui foram usados apenas os arquivos de saída do DADA2"
+      ],
+      "metadata": {
+        "id": "cGLGSruAZmwC"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "qiime alignment mafft \\\n",
+        "--i-sequences rep-seqs.qza \\\n",
+        "--o-alignment aligned-rep-seqs.qza\n",
+        " \n",
+        "qiime alignment mask \\\n",
+        "--i-alignment aligned-rep-seqs.qza \\\n",
+        "--o-masked-alignment masked-aligned-rep-seqs.qza\n",
+        " \n",
+        "qiime phylogeny fasttree \\\n",
+        "--i-alignment masked-aligned-rep-seqs.qza \\\n",
+        "--o-tree unrooted-tree.qza\n",
+        " \n",
+        "qiime phylogeny midpoint-root \\\n",
+        "--i-tree unrooted-tree.qza \\\n",
+        "--o-rooted-tree rooted-tree.qza"
+      ],
+      "metadata": {
+        "id": "1wso2SR5ZhBe"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "# Remoção de sequências de Archaea, mitocôndrias e cloroplastos"
+      ],
+      "metadata": {
+        "id": "3UPCeMiNTGWG"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "qiime taxa filter-table  \\\n",
+        "--i-table asv_table.qza  \\\n",
+        "--i-taxonomy taxonomy.qza  \\\n",
+        "--p-exclude mitochondria,chloroplast,archaea  \\\n",
+        "--o-filtered-table asv-table-woAMC.qza\n",
+        "\n",
+        "qiime feature-table summarize \\\n",
+        "  --i-table asv-table-woAMC.qza \\\n",
+        "  --o-visualization asv-table-woAMC.qzv "
+      ],
+      "metadata": {
+        "id": "YjFZl9hyTcaS"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "# Identificação taxonômica"
+      ],
+      "metadata": {
+        "id": "B9bNOa-rUnoZ"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "# Beta e Alfa diversidade (Análises preliminares)"
+      ],
+      "metadata": {
+        "id": "AqDUKg2LUyg0"
+      }
+    }
+  ]
+}
